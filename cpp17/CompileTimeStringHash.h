@@ -26,11 +26,51 @@ inline constexpr size_t const_string_hash_impl(const std::basic_string_view<char
 	return (_Val);
 }
 
-//template <typename char_t, size_t Size>
-//constexpr std::basic_string_view<char_t> make_string_view(const char_t(&str)[Size]) { return std::basic_string_view<char_t>(str, Size); }
-//
-//template <typename char_t, size_t Size>
-//constexpr size_t const_string_hash(const char_t(&str)[Size]) { return const_string_hash_impl(make_string_view(str)); }
+template <typename char_t, size_t Size>
+constexpr std::basic_string_view<char_t> make_string_view(const char_t(&str)[Size]) { return std::basic_string_view<char_t>(str, Size); }
+
+constexpr std::string_view operator "" _sv(const char *_Str, size_t _Len)
+{	
+	return std::string_view(_Str, _Len);
+}
+
+constexpr std::wstring_view operator "" _sv(const wchar_t *_Str, size_t _Len)
+{
+	return std::wstring_view(_Str, _Len);
+}
+
+constexpr std::u16string_view operator "" _sv(const char16_t *_Str, size_t _Len)
+{
+	return std::u16string_view(_Str, _Len);
+}
+
+constexpr std::u32string_view operator "" _sv(const char32_t *_Str, size_t _Len)
+{
+	return std::u32string_view(_Str, _Len);
+}
+
+template <typename char_t, size_t Size>
+constexpr size_t const_string_hash(const char_t(&str)[Size]) { return const_string_hash_impl(make_string_view(str)); }
+
+constexpr size_t operator "" _hash(const char *_Str, size_t _Len)
+{
+	return const_string_hash_impl(std::string_view(_Str, _Len));
+}
+
+constexpr size_t operator "" _hash(const wchar_t *_Str, size_t _Len)
+{
+	return const_string_hash_impl(std::wstring_view(_Str, _Len));
+}
+
+constexpr size_t operator "" _hash(const char16_t *_Str, size_t _Len)
+{
+	return const_string_hash_impl(std::u16string_view(_Str, _Len));
+}
+
+constexpr size_t operator "" _hash(const char32_t *_Str, size_t _Len)
+{
+	return const_string_hash_impl(std::u32string_view(_Str, _Len));
+}
 
 //template <typename char_t>
 //constexpr bool operator==(const std::basic_string_view<char_t> l, const std::basic_string_view<char_t> r)
