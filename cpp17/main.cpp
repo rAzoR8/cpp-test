@@ -4,7 +4,6 @@
 #include <vector>
 #include <algorithm>
 #include <ppl.h>
-//#include <experimental/coroutine>
 
 //https://github.com/STEllAR-GROUP/hpx
 
@@ -198,6 +197,235 @@ void CompileTimeStringHashExample()
 	//else { // NaN ;) }
 }
 
+#include <variant>
+// http://en.cppreference.com/w/cpp/utility/variant/visit
+
+//template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
+//template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
+
+struct Matcher
+{
+	void operator()(int arg) { std::cout << "int " << arg << std::endl; }
+	void operator()(double arg) { std::cout << "double " << arg << std::endl; }
+	void operator()(std::string arg) { std::cout << "string " << arg << std::endl; }
+};
+
+void VariantExample()
+{
+	using var_t = std::variant<int, double, std::string>;
+
+	std::vector<var_t> Vec = { 1.337, 1337, "1337" };
+
+	for (const var_t& v: Vec)
+	{
+		std::visit(Matcher(), v);
+		std::visit([](auto&& arg) {std::cout << arg << std::endl; }, v);
+
+		if (auto pVal = std::get_if<int>(&v))
+		{
+			std::cout << "variant value: " << *pVal << '\n';
+		}
+		else
+		{
+			std::cout << "failed to get value!" << '\n';
+		}
+
+		//using T = std::decay_t<decltype(v)>;
+		//if constexpr (std::is_same_v<T, int>)
+		//{
+		//	std::cout << "int " << std::get<T>(v) << std::endl;
+		//}
+		//else if constexpr (std::is_same_v<T, double>)
+		//{
+		//	std::cout << "double " << std::get<T>(v) << std::endl;
+		//}
+		//else if constexpr (std::is_same_v < T, std::string > )
+		//{
+		//	std::cout << "string " << std::get<T>(v) << std::endl;
+		//}
+	}
+}
+
+//---------------------------------------------------------------------------------------------------
+
+#include <any>
+
+enum Types
+{
+	Type_Int,
+	Type_String,
+	Type_Double
+};
+
+std::any SomeFunc(Types kType)
+{
+	switch (kType)
+	{
+	case Type_Int:
+		return std::make_any<int>(1337);
+	case Type_String:
+		return std::make_any<std::string>("1.337");
+	case Type_Double:
+		return std::make_any<double>(1.337);
+	default:
+		return {};
+	}
+}
+
+void AnyExample()
+{
+	std::any obj{ const_string_hash("1234") };
+
+	if (obj.has_value())
+	{
+		std::cout << std::any_cast<size_t>(obj) << std::endl;
+
+		try
+		{
+			std::any_cast<int>(obj);
+		}
+		catch (std::bad_any_cast&)
+		{
+			std::cout << "Wrong type " << obj.type().name() << std::endl;
+		}
+	}
+
+	std::any nothing;
+
+	if (nothing.has_value())
+	{
+		std::cout << "oh boi\n";
+	}
+
+	nothing = SomeFunc(Type_String);
+
+	if (nothing.has_value())
+	{
+		std::cout << std::any_cast<std::string>(nothing) << std::endl;
+	}
+}
+
+//---------------------------------------------------------------------------------------------------
+
+#include <optional>
+
+std::optional<std::string> SomeOtherFunc(bool bCondition)
+{
+	if (bCondition)
+	{
+		return "Munich Game-Engine Devs";
+	}
+	else
+	{
+		return {};
+	}
+}
+
+void OptionalExample()
+{
+	std::cout << SomeOtherFunc(false).value_or("empty") << std::endl;
+	std::cout << SomeOtherFunc(true).value() << std::endl;
+}
+
+//---------------------------------------------------------------------------------------------------
+
+//#include <map>
+#include <tuple>
+
+// parameter folds
+//template <typename... Args>
+//void print(Args&&... args)
+//{
+//	(std::cout << ... << args) << '\n';
+//
+//	// std::cout << args1 << args2 << args3 << ...
+//}
+
+void MiscExamples()
+{
+	/// structured bindings:
+	struct MyStruct 
+	{
+		int x;
+		double y;
+	};
+
+	//MyStruct h();
+	//auto [u, v] = h();
+
+	//std::map<std::string, double> myMap;
+
+	//for (const auto&[key, val] : myMap)
+	//{
+	//	std::cout << key << ": " << val << std::endl;
+	//}
+
+	/// in scope inits
+
+	//if (auto Opt = SomeOtherFunc(true); Opt.has_value())
+	//{
+	//	// do something with opt
+	//}
+
+	std::tuple<int, int, std::string> t(1, 2, "Hallo");
+
+	//std::tuple t(1, 2, "Hallo");
+	
+	//print(1.f, "Hallo");
+
+	/// static initialization
+
+	//class SomeClass
+	//{
+	//	static inline const std::string ComplexType = "test";	
+	//};
+	
+	//if (__has_include("SomeFile.h"))
+	//{
+	//
+	//}
+	//else if (__has_include("CompileTimeStringHash.h"))
+	//{
+	//	std::cout << "Good for you!\n";
+	//}
+
+	/// also in cpp 17
+	// std::byte
+	// std::filesystem based on boost::filesystem
+	// constexpr lambdas
+	// ranged-for loop supports now ranges with different begin and end types => see Range v3 https://github.com/ericniebler/range-v3
+
+
+	/// NOT in cpp 17
+	// Concepts :(((((
+	// Modules
+	// Coroutines
+	// Static reflection
+}
+
+/// namespaces
+namespace A {
+	namespace B {
+		namespace C {
+
+		}
+	}
+}
+
+namespace A::B::C
+{
+
+}
+
+//template <class /*auto*/ v1, decltype(v1)... vs>
+//struct typed_value_list
+//{
+//	using T = decltype(v1);
+//
+//	T VS[sizeof...(vs) + 1];
+//};
+
+//---------------------------------------------------------------------------------------------------
 
 void main()
 {
@@ -212,6 +440,12 @@ void main()
 	BitOpsOnEnumClassExample();
 
 	CompileTimeStringHashExample();
+	
+	VariantExample();
 
+	AnyExample();
+
+	OptionalExample();
+	
 	system("pause");
 }
