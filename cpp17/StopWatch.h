@@ -1,3 +1,7 @@
+// Author: Fabian Wahlster
+// Copyright 2017
+// fwahlster@tum.de
+
 #ifndef STOPWATCH_H
 #define STOPWATCH_H
 

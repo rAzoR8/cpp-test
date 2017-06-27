@@ -1,9 +1,14 @@
+// Author: Fabian Wahlster
+// Copyright 2017
+// fwahlster@tum.de
+
 // /std:c++latest 
 
 #include "StopWatch.h"
 #include <vector>
 #include <algorithm>
-#include <ppl.h>
+//#include <ppl.h>
+#include "CRTP.h"
 
 //https://github.com/STEllAR-GROUP/hpx
 
@@ -31,6 +36,8 @@ void GenerateData(std::vector<double>& _Values)
 
 void IteratorBenchmark(std::vector<double>& _Values)
 {
+	GenerateData(_Values);
+
 	{
 		StopWatch<> Watch("std for");
 
@@ -104,7 +111,7 @@ void IteratorBenchmark(std::vector<double>& _Values)
 
 	{
 		StopWatch<> Watch("ppl parallel for");
-		concurrency::parallel_for_each(_Values.begin(), _Values.end(), [](double& fValue) {fValue *= fValue; });
+		//concurrency::parallel_for_each(_Values.begin(), _Values.end(), [](double& fValue) {fValue *= fValue; });
 	}
 }
 //---------------------------------------------------------------------------------------------------
@@ -122,7 +129,7 @@ void SortBenchmark(std::vector<double>& _Values)
 
 	{
 		StopWatch<> Watch("ppl parallel sort");
-		concurrency::parallel_sort(_Values.begin(), _Values.end());
+		//concurrency::parallel_sort(_Values.begin(), _Values.end());
 	}
 
 	GenerateData(_Values);
@@ -130,7 +137,7 @@ void SortBenchmark(std::vector<double>& _Values)
 	{
 		StopWatch<> Watch("ppl parallel buffered sort");
 		// needs n*sizeof(T) additional memory
-		concurrency::parallel_buffered_sort(_Values.begin(), _Values.end());
+		//concurrency::parallel_buffered_sort(_Values.begin(), _Values.end());
 	}
 
 	GenerateData(_Values);
@@ -138,43 +145,43 @@ void SortBenchmark(std::vector<double>& _Values)
 	{
 		StopWatch<> Watch("ppl parallel radixsort");
 		// needs projection function T -> size_t, i just used reinterpret
-		concurrency::parallel_radixsort<std::allocator<double>>(_Values.begin(), _Values.end(), [](const double& _fValue) {return *reinterpret_cast<const uint64_t*>(&_fValue); });
+		//concurrency::parallel_radixsort<std::allocator<double>>(_Values.begin(), _Values.end(), [](const double& _fValue) {return *reinterpret_cast<const uint64_t*>(&_fValue); });
 	}
 }
 
 //---------------------------------------------------------------------------------------------------
 
-// #include "EnumOps.h"
+ #include "EnumOps.h"
 void BitOpsOnEnumClassExample()
 {
 	enum class Flag : uint32_t
 	{
-		kFlag_1 = 1 << 0,
-		kFlag_2 = 1 << 1,
-		kFlag_3 = 1 << 2,
+		kFlag_1 = 1 << 0u,
+		kFlag_2 = 1 << 1u,
+		kFlag_3 = 1 << 2u,
 	};
 
-	//Flag f(Flag::kFlag_1 | Flag::kFlag_2);
+	Flag f(Flag::kFlag_1 | Flag::kFlag_2);
 
-	//switch (f)
-	//{
-	//case Flag::kFlag_1&Flag::kFlag_2:
-	//	break;
-	//case Flag::kFlag_2:
-	//	break;
-	//case Flag::kFlag_3:
-	//	break;
-	//default:
-	//	break;
-	//}
+	switch (f)
+	{
+	case Flag::kFlag_1 | Flag::kFlag_2:
+		break;
+	case Flag::kFlag_2:
+		break;
+	case Flag::kFlag_3:
+		break;
+	default:
+		break;
+	}
 }
 
 //---------------------------------------------------------------------------------------------------
 
 #include "CompileTimeStringHash.h"
 
-//constexpr std::string_view view = std::string_view("test123");
-//constexpr size_t uTest1 = const_string_hash("test");
+constexpr std::string_view view = make_string_view("test123");
+constexpr size_t uTest1 = "test"_hash;
 
 template <bool yes>
 constexpr bool is_compile_time();
@@ -187,10 +194,10 @@ constexpr bool is_compile_time<false>() { return false; }
 
 void CompileTimeStringHashExample()
 {
-	//constexpr size_t uTest2 = const_string_hash("test");
-	//constexpr bool isCompileTime = is_compile_time<uTest1 == uTest2>();
+	constexpr size_t uTest2 = const_string_hash("test");
+	constexpr bool isCompileTime = is_compile_time<uTest1 == uTest2>();
 
-	//bool butIsIt = is_compile_time<make_string_view("hallo") != make_string_view("hallo")>();
+	bool butIsIt = is_compile_time<make_string_view("hallo") != make_string_view("hallo")>();
 
 	//if constexpr (std::is_integer ...) { //integerstuff }
 	//else if constexpr (std::is_floating_point ...) { //floatingpointstuff }
@@ -214,7 +221,7 @@ void VariantExample()
 {
 	using var_t = std::variant<int, double, std::string>;
 
-	std::vector<var_t> Vec = { 1.337, 1337, "1337" };
+	std::vector<var_t> Vec = { "enginestuff", 1.337, 1337, "1337" };
 
 	for (const var_t& v: Vec)
 	{
@@ -274,15 +281,16 @@ std::any SomeFunc(Types kType)
 
 void AnyExample()
 {
-	std::any obj{ const_string_hash("1234") };
+	std::any obj{ "hall" };
 
 	if (obj.has_value())
 	{
-		std::cout << std::any_cast<size_t>(obj) << std::endl;
-
+	
+		std::cout << sizeof(obj);
 		try
 		{
-			std::any_cast<int>(obj);
+			std::cout << std::any_cast<const char*>(obj) << std::endl;
+			//std::any_cast<int>(obj);
 		}
 		catch (std::bad_any_cast&)
 		{
@@ -333,13 +341,15 @@ void OptionalExample()
 #include <tuple>
 
 // parameter folds
-//template <typename... Args>
-//void print(Args&&... args)
-//{
-//	(std::cout << ... << args) << '\n';
-//
-//	// std::cout << args1 << args2 << args3 << ...
-//}
+template <typename... Args>
+void print(Args&&... args)
+{
+	(std::cout << ... << args) << '\n';
+
+	// std::cout << args1 << args2 << args3 << ...
+}
+#include <map>
+
 
 void MiscExamples()
 {
@@ -350,12 +360,15 @@ void MiscExamples()
 		double y;
 	};
 
+	//print("hallo", 1.f, 1337);
+
 	//MyStruct h();
 	//auto [u, v] = h();
+	//auto[a, b] = std::make_pair(1, 2.0);
 
 	//std::map<std::string, double> myMap;
 
-	//for (const auto&[key, val] : myMap)
+	//for (auto[key, val] : myMap)
 	//{
 	//	std::cout << key << ": " << val << std::endl;
 	//}
@@ -417,7 +430,7 @@ namespace A::B::C
 
 }
 
-//template <class /*auto*/ v1, decltype(v1)... vs>
+//template <class auto v1, decltype(v1)... vs>
 //struct typed_value_list
 //{
 //	using T = decltype(v1);
@@ -427,25 +440,30 @@ namespace A::B::C
 
 //---------------------------------------------------------------------------------------------------
 
-void main()
+int main()
 {
-	std::vector<double> Values;
+	//std::vector<double> Values;
 
 	//SortBenchmark(Values);
 
-	std::cout << std::endl;
+	//std::cout << std::endl;
 
 	//IteratorBenchmark(Values);
 
-	BitOpsOnEnumClassExample();
+	//BitOpsOnEnumClassExample();
 
-	CompileTimeStringHashExample();
+	//CompileTimeStringHashExample();
 	
-	VariantExample();
+	//VariantExample();
 
-	AnyExample();
+	//AnyExample();
 
-	OptionalExample();
+	//OptionalExample();
+
+	MyRenderPass pass;
+	pass.RenderBatch({}, {});
 	
-	system("pause");
+	//system("pause");
+
+	return 0;
 }
